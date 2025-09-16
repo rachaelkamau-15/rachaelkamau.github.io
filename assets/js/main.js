@@ -1,8 +1,3 @@
-/*
-	Massively by HTML5 UP
-	html5up.net | @ajlkn
-	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
-*/
 
 (function($) {
 
@@ -11,7 +6,7 @@
 		$wrapper = $('#wrapper'),
 		$header = $('#header'),
 		$nav = $('#nav'),
-		$main = $('#main'),
+		$main = $('#main'), // Keep this for targeting project sections
 		$navPanelToggle, $navPanel, $navPanelInner;
 
 	// Breakpoints.
@@ -254,5 +249,100 @@
 			});
 
 		}
+
+	// PROJECT CATEGORY FILTERING LOGIC
+	function showCategory(categoryId) {
+		// Hide all project sections
+		$main.find('.posts').hide();
+
+		if (categoryId === '#all-projects') {
+			// Show all project sections
+			$main.find('.posts').show();
+		} else {
+			// Show only the selected section
+			$(categoryId).show();
+		}
+
+
+		// Update active class for desktop nav
+		$('#nav .links a').removeClass('active');
+		// Find the link whose href matches the categoryId and add active class
+		$('#nav .links a[href="' + categoryId + '"]').addClass('active');
+
+		// For mobile panel, update active class
+		$navPanelInner.find('a').removeClass('active');
+		$navPanelInner.find('a[href="' + categoryId + '"]').addClass('active');
+	}
+
+	// Event listener for category navigation links (desktop)
+	$('#nav .links a').on('click', function(e) {
+		var href = $(this).attr('href');
+
+		// Only apply this logic to internal category links
+		if (href.startsWith('#') && href !== '#header') { // Exclude the "Continue" arrow link
+			e.preventDefault(); // Prevent default anchor jump
+
+			showCategory(href);
+
+			// Update URL hash without causing a page reload
+			history.pushState(null, null, href);
+
+			// Ensure the main content is visible if intro is hidden
+			if ($intro.hasClass('hidden') || href === '#all-projects') { // Scroll to projects even if intro is visible for "All Projects"
+				$('html, body').animate({
+					scrollTop: $main.offset().top - ($header.outerHeight() || 0) // Scroll to main, considering header height
+				}, 500);
+			}
+		}
+	});
+
+	// Event listener for category navigation links (mobile - within navPanel)
+	// This targets the dynamically moved links within the #navPanel
+	// We need to use event delegation because the links are moved by breakpoints.js
+	$body.on('click', '#navPanel nav a', function(e) {
+		var href = $(this).attr('href');
+
+		if (href.startsWith('#') && href !== '#navPanel') { // Exclude the close button link
+			e.preventDefault(); // Prevent default anchor jump
+
+			showCategory(href);
+
+			// Close the mobile nav panel
+			$body.removeClass('is-navPanel-visible');
+
+			// Update URL hash without causing a page reload
+			history.pushState(null, null, href);
+
+			// Scroll to the top of the main section
+			$('html, body').animate({
+				scrollTop: $main.offset().top - ($header.outerHeight() || 0) // Scroll to main, considering header height
+			}, 500);
+		}
+	});
+
+
+	// Initial Project Display Logic on page load
+	$window.on('load', function() {
+		// First, handle the intro section's visibility if it exists
+		if ($intro.length > 0) {
+			// If there's an intro, only show projects after scrolling past it
+			// For now, let's keep it simple and show the default category immediately,
+			// but we'll manage scrolling later.
+		}
+
+		// Check if a specific category or "all-projects" is in the URL hash
+		var initialHash = window.location.hash;
+		if (initialHash === '#all-projects') {
+			showCategory('#all-projects');
+		} else if (initialHash && $(initialHash).length && $(initialHash).hasClass('posts')) {
+			showCategory(initialHash); // Show the section specified in the URL hash
+		} else {
+			// If no hash, or hash doesn't match a section, default to All Projects
+			showCategory('#all-projects');
+		}
+
+		// Ensure that if intro is visible, we don't immediately scroll to projects.
+		// The `scrolly` script handles the "Continue" arrow.
+	});
 
 })(jQuery);
